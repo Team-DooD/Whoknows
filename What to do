@@ -1,0 +1,15 @@
+SQL Injection: Ubeskyttede SQL-forespørgsler i flere funktioner gør appen sårbar over for SQL Injection.
+Manglende Input Validering: Ingen validering af brugerinput, risikerer XSS og dataforfalskning.
+MD5 til Password Hashing: Brug af MD5 er usikkert. Skift til bcrypt eller lignende.
+Ingen CSRF-beskyttelse: Appen mangler CSRF-beskyttelse, kan misbruges.
+Hardcoded Secret Key: Hardcoded secret key. Brug miljøvariabler.
+Mangler HTTPS: Ingen HTTPS, sårbar for Man-in-the-Middle angreb.
+Flask.g Misbrug: Brug af global state kan give bugs under høj belastning.
+Ingen Error Handling: Mangel på error handling kan få appen til at crashe.
+Ingen Logging: Mangler logging for at spore fejl.
+Usikker Database Init: Ingen tjek på SQL-scripts ved init af databasen.
+Hardcoded Database Path: Brug miljøvariabler i stedet.
+Ingen Flask Blueprints: Ingen modularitet, alt er smidt i én bunke.
+Ingen Rate Limiting: Ingen beskyttelse mod brute-force på API’en.
+Ingen Tests: Ingen tests, hvilket gør fejlfinding besværligt.
+Fix det vigtigste først: SQL Injection, MD5 og CSRF-beskyttelse. Resten kan komme bagefter.
