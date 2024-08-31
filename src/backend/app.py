@@ -1,4 +1,3 @@
-from __future__ import with_statement
 import os
 import sys
 import sqlite3
@@ -36,7 +35,7 @@ def check_db_exists():
     """Checks if the database exists."""
     db_exists = os.path.exists(DATABASE_PATH)
     if not db_exists:
-        print ("Database not found")
+        print("Database not found")
         sys.exit(1)
     else:
         return db_exists
@@ -48,20 +47,19 @@ def init_db():
         with app.open_resource('../schema.sql') as f:
             db.cursor().executescript(f.read().decode('utf-8'))
         db.commit()
-        print ("Initialized the database: " + str(DATABASE_PATH))
+        print(f"Initialized the database: {DATABASE_PATH}")
 
 
 def query_db(query, args=(), one=False):
     """Queries the database and returns a list of dictionaries."""
     cur = g.db.execute(query, args)
-    rv = [dict((cur.description[idx][0], value)
-               for idx, value in enumerate(row)) for row in cur.fetchall()]
+    rv = [dict((cur.description[idx][0], value) for idx, value in enumerate(row)) for row in cur.fetchall()]
     return (rv[0] if rv else None) if one else rv
 
 
 def get_user_id(username):
     """Convenience method to look up the id for a username."""
-    rv = g.db.execute("SELECT id FROM users WHERE username = '%s'" % username).fetchone()
+    rv = g.db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
     return rv[0] if rv else None
 
 
@@ -77,7 +75,7 @@ def before_request():
     g.db = connect_db()
     g.user = None
     if 'user_id' in session:
-        g.user = query_db("SELECT * FROM users WHERE id = '%s'" % session['user_id'], one=True)
+        g.user = query_db("SELECT * FROM users WHERE id = ?", (session['user_id'],), one=True)
 
 
 @app.after_request
@@ -92,8 +90,6 @@ def after_request(response):
 ################################################################################
 
 @app.route('/')
-
-
 def search():
     """Shows the search page."""
     q = request.args.get('q', None)
@@ -101,7 +97,7 @@ def search():
     if not q:
         search_results = []
     else:
-        search_results = query_db("SELECT * FROM pages WHERE language = '%s' AND content LIKE '%%%s%%'" % (language, q))
+        search_results = query_db("SELECT * FROM pages WHERE language = ? AND content LIKE ?", (language, f"%{q}%"))
 
     return render_template('search.html', search_results=search_results, query=q)
 
@@ -148,7 +144,7 @@ def api_search():
     if not q:
         search_results = []
     else:
-        search_results = query_db("SELECT * FROM pages WHERE language = '%s' AND content LIKE '%%%s%%'" % (language, q))
+        search_results = query_db("SELECT * FROM pages WHERE language = ? AND content LIKE ?", (language, f"%{q}%"))
 
     return jsonify(search_results=search_results)
 
@@ -157,7 +153,7 @@ def api_search():
 def api_login():
     """Logs the user in."""
     error = None
-    user = query_db("SELECT * FROM users WHERE username = '%s'" % request.form['username'], one=True)
+    user = query_db("SELECT * FROM users WHERE username = ?", (request.form['username'],), one=True)
     if user is None:
         error = 'Invalid username'
     elif not verify_password(user['password'], request.form['password']):
@@ -186,7 +182,7 @@ def api_register():
     elif get_user_id(request.form['username']) is not None:
         error = 'The username is already taken'
     else:
-        g.db.execute("INSERT INTO users (username, email, password) values ('%s', '%s', '%s')" % 
+        g.db.execute("INSERT INTO users (username, email, password) values (?, ?, ?)", 
                      (request.form['username'], request.form['email'], hash_password(request.form['password'])))
         g.db.commit()
         flash('You were successfully registered and can login now')
@@ -204,6 +200,7 @@ def hash_password(password):
     hash_object = hashlib.md5(password_bytes)
     password_hash = hash_object.hexdigest()
     return password_hash
+
 
 def verify_password(stored_hash, password):
     """Verify a stored password against one provided by user. Returns a boolean."""
