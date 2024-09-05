@@ -1,0 +1,7 @@
+
+appsettings.json
+appsettings.Development.json
+*.vsidx
+/bin
+/obj/Debug
+/obj
