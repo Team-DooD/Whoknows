@@ -1,1 +1,0 @@
-# KEA_DAT_DevOps_2024_Autumn
