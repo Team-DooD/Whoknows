@@ -16,7 +16,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDistributedMemoryCache();
 
 // Add HttpClient for backend API
-builder.Services.AddHttpClient("BackendAPI", client =>
+builder.Services.AddHttpClient("BackendAPI",client =>
 {
     client.BaseAddress = new Uri("https://localhost:7100");
 });
@@ -59,7 +59,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-app.UseSession();
+//app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
