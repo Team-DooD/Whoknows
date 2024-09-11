@@ -1,0 +1,59 @@
+﻿@page "/login"
+@using Microsoft.AspNetCore.Components.Authorization
+@using WhoKnowsV2.util
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<EditForm Model="@loginModel" OnValidSubmit="HandleLogin" FormName="loginForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <InputText @bind-Value="loginModel.Username" placeholder="Username" id="username" FormName="loginForm" />
+    <InputText @bind-Value="loginModel.Password" type="password" id="password" FormName="loginForm" />
+    <button type="submit">Login</button>
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+</EditForm>
+
+@code {
+    private LoginRequest loginModel = new LoginRequest();
+    private string errorMessage;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("https://localhost:7100/api/Login/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                await ((ApiAuthenticationStateProvider)AuthStateProvider).MarkUserAsAuthenticated(result.Token);
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                errorMessage = "Invalid username or password.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "An error occurred while trying to log in. Please try again.";
+            // Optionally log the exception
+        }
+    }
+
+    public class LoginRequest
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+    }
+
+    public class LoginResponse
+    {
+        public string Token { get; set; }
+    }
+}

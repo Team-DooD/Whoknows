@@ -1,0 +1,24 @@
+﻿@page "/securepage"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized>
+        <h3>Secure Page</h3>
+        <p>You must be logged in to see this page.</p>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to view this page. Redirecting to login...</p>
+        @code {
+        protected override async Task OnInitializedAsync()
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (!authState.User.Identity.IsAuthenticated)
+            {
+                Navigation.NavigateTo("/login");
+            }
+        }
+        }
+    </NotAuthorized>
+</AuthorizeView>
