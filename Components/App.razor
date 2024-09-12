@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Components.Authorization
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -13,8 +15,10 @@
 </head>
 
 <body>
+    <CascadingAuthenticationState>
     <Routes />
     <script src="_framework/blazor.web.js"></script>
+    </CascadingAuthenticationState>
 </body>
 
 </html>

@@ -1,8 +1,10 @@
 ﻿using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+
 
 namespace WhoKnowsV2.util
 {
@@ -10,23 +12,26 @@ namespace WhoKnowsV2.util
     {
         private readonly HttpClient _httpClient;
         private readonly ProtectedLocalStorage _localStorage;
+        private NavigationManager _navigationManager;
 
-        public ApiAuthenticationStateProvider(HttpClient httpClient, ProtectedLocalStorage localStorage)
+        public ApiAuthenticationStateProvider(HttpClient httpClient, ProtectedLocalStorage localStorage, NavigationManager navigationManager)
         {
             _httpClient = httpClient;
             _localStorage = localStorage;
+            _navigationManager = navigationManager;
         }
 
         public async Task MarkUserAsAuthenticated(string token)
         {
+            // Save the token in local storage
+            await _localStorage.SetAsync("authToken", token);
+
             var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt"));
             var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
 
-            // Save token in protected local storage
-            await _localStorage.SetAsync("authToken", token);
-
             NotifyAuthenticationStateChanged(authState);
         }
+
 
         public async Task MarkUserAsLoggedOut()
         {
@@ -43,17 +48,31 @@ namespace WhoKnowsV2.util
             var result = await _localStorage.GetAsync<string>("authToken");
             var token = result.Success ? result.Value : null;
 
+            var uri = _navigationManager.ToAbsoluteUri(_navigationManager.Uri);
+            if (uri.LocalPath == "/Account/Login")
+            {
+                // Prevent redirect loop
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            }
+
             if (string.IsNullOrWhiteSpace(token))
             {
+                // Return anonymous state if no token is present
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
 
             // Add token to default request headers
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt"));
-            return new AuthenticationState(authenticatedUser);
+            // Assuming you have a method to parse claims from JWT
+            var claims = ParseClaimsFromJwt(token);
+            var identity = new ClaimsIdentity(claims, "jwt");
+            var user = new ClaimsPrincipal(identity);
+
+            return new AuthenticationState(user);
         }
+
+
 
         private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
         {

@@ -9,6 +9,8 @@ using WhoKnowsV2.Components;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -22,28 +24,40 @@ builder.Services.AddHttpClient("BackendAPI",client =>
 });
 
 // Add session support
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
+//builder.Services.AddSession(options =>
+//{
+//    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
+//    options.Cookie.HttpOnly = true;
+//    options.Cookie.IsEssential = true;
+//});
 
 // Add Authentication
-builder.Services.AddAuthentication("Cookies")
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/login"; // Redirects to the login page if not authenticated
-    });
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = "Cookies";
+    options.DefaultChallengeScheme = "Cookies";
+})
+.AddCookie("Cookies", options =>
+{
+    options.LoginPath = "/login"; // Redirects to the login page if not authenticated
+    options.Cookie.HttpOnly = true;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+});
 
 // Add Authorization
 builder.Services.AddAuthorization();
-
-// Add the custom AuthenticationStateProvider
-builder.Services.AddScoped<AuthenticationStateProvider, ApiAuthenticationStateProvider>();
-
-// Add ProtectedLocalStorage services
 builder.Services.AddScoped<ProtectedLocalStorage>();
+builder.Services.AddScoped<ApiAuthenticationStateProvider>(); // Use Scoped instead of Transient
+builder.Services.AddScoped<AuthenticationStateProvider, ApiAuthenticationStateProvider>();
+builder.Services.AddAuthorizationCore(options =>
+{
+    options.AddPolicy("AllowAnonymous", policy =>
+    {
+        policy.RequireAssertion(context => true); // Allow everyone
+    });
+});
+
+
 
 var app = builder.Build();
 
@@ -59,7 +73,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-//app.UseSession();
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
