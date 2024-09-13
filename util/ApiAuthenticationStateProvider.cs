@@ -5,14 +5,15 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
-
 namespace WhoKnowsV2.util
 {
     public class ApiAuthenticationStateProvider : AuthenticationStateProvider
     {
         private readonly HttpClient _httpClient;
         private readonly ProtectedLocalStorage _localStorage;
-        private NavigationManager _navigationManager;
+        private readonly NavigationManager _navigationManager;
+        private bool _isInitialized = false;
+        private Task<AuthenticationState> _authenticationStateTask;
 
         public ApiAuthenticationStateProvider(HttpClient httpClient, ProtectedLocalStorage localStorage, NavigationManager navigationManager)
         {
@@ -23,19 +24,47 @@ namespace WhoKnowsV2.util
 
         public async Task MarkUserAsAuthenticated(string token)
         {
-            // Save the token in local storage
-            await _localStorage.SetAsync("authToken", token);
+            try
+            {
+                // Check for a valid token before proceeding
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    throw new ArgumentException("Token cannot be null or empty", nameof(token));
+                }
 
-            var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt"));
-            var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
+                // Save the token in local storage
+                await _localStorage.SetAsync("authToken", token);
 
-            NotifyAuthenticationStateChanged(authState);
+                // Parse claims and create identity
+                var claims = ParseClaimsFromJwt(token);
+                var identity = new ClaimsIdentity(claims, "jwt");
+
+                // Ensure the ClaimsPrincipal is not null
+                var authenticatedUser = new ClaimsPrincipal(identity);
+                if (authenticatedUser == null)
+                {
+                    throw new InvalidOperationException("Failed to create ClaimsPrincipal.");
+                }
+
+                // Create the authentication state
+                var authState = new AuthenticationState(authenticatedUser);
+
+                // Notify that authentication state has changed
+                NotifyAuthenticationStateChanged(Task.FromResult(authState));
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if necessary
+                Console.WriteLine($"Exception in MarkUserAsAuthenticated: {ex.Message}");
+
+                // Optionally handle specific exceptions or rethrow
+                throw;
+            }
         }
 
 
         public async Task MarkUserAsLoggedOut()
         {
-            // Remove token from protected local storage
             await _localStorage.DeleteAsync("authToken");
 
             var anonymousUser = new ClaimsPrincipal(new ClaimsIdentity());
@@ -43,35 +72,55 @@ namespace WhoKnowsV2.util
             NotifyAuthenticationStateChanged(authState);
         }
 
-        public override async Task<AuthenticationState> GetAuthenticationStateAsync()
-        {
-            var result = await _localStorage.GetAsync<string>("authToken");
-            var token = result.Success ? result.Value : null;
-
-            var uri = _navigationManager.ToAbsoluteUri(_navigationManager.Uri);
-            if (uri.LocalPath == "/Account/Login")
+        public override Task<AuthenticationState> GetAuthenticationStateAsync()
+     {
+            if (_isInitialized)
             {
-                // Prevent redirect loop
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                return _authenticationStateTask;
             }
 
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                // Return anonymous state if no token is present
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-            }
+            _authenticationStateTask = GetAuthenticationStateInternal();
+            _isInitialized = true;
 
-            // Add token to default request headers
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            // Assuming you have a method to parse claims from JWT
-            var claims = ParseClaimsFromJwt(token);
-            var identity = new ClaimsIdentity(claims, "jwt");
-            var user = new ClaimsPrincipal(identity);
-
-            return new AuthenticationState(user);
+            return _authenticationStateTask;
         }
 
+        private async Task<AuthenticationState> GetAuthenticationStateInternal()
+        {
+            try
+            {
+                var result = await _localStorage.GetAsync<string>("authToken");
+                var token = result.Success ? result.Value : null;
+
+                // Prevent redirect loop
+                var uri = _navigationManager.ToAbsoluteUri(_navigationManager.Uri);
+                if (uri.LocalPath == "/Login")
+                {
+                    return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                }
+
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                }
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var claims = ParseClaimsFromJwt(token);
+                var identity = new ClaimsIdentity(claims, "jwt");
+                var user = new ClaimsPrincipal(identity);
+
+                return new AuthenticationState(user);
+            }
+            catch (Exception e)
+            {
+                // Log the exception if necessary
+                Console.WriteLine($"Exception in GetAuthenticationStateInternal: {e.Message}");
+
+                // Return anonymous state in case of error
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            }
+        }
 
 
         private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)

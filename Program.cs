@@ -11,8 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+
+builder.Services.AddRazorComponents(options =>
+    options.TemporaryRedirectionUrlValidityDuration =
+        TimeSpan.FromMinutes(7)).AddInteractiveServerComponents();
 
 // Add in-memory distributed cache
 builder.Services.AddDistributedMemoryCache();
@@ -24,12 +26,12 @@ builder.Services.AddHttpClient("BackendAPI",client =>
 });
 
 // Add session support
-//builder.Services.AddSession(options =>
-//{
-//    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
-//    options.Cookie.HttpOnly = true;
-//    options.Cookie.IsEssential = true;
-//});
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 // Add Authentication
 builder.Services.AddAuthentication(options =>
@@ -45,10 +47,13 @@ builder.Services.AddAuthentication(options =>
 });
 
 // Add Authorization
+
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<ProtectedLocalStorage>();
-builder.Services.AddScoped<ApiAuthenticationStateProvider>(); // Use Scoped instead of Transient
+builder.Services.AddTransient<ApiAuthenticationStateProvider>(); // Use Scoped instead of Transient
 builder.Services.AddScoped<AuthenticationStateProvider, ApiAuthenticationStateProvider>();
+
+builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorizationCore(options =>
 {
     options.AddPolicy("AllowAnonymous", policy =>
