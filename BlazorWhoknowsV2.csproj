@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aspnet-BlazorWhoknowsV2-ba972df7-0fe6-4808-a5db-6de21d94d7e0</UserSecretsId>
+    <WebProject_DirectoryAccessLevelKey>0</WebProject_DirectoryAccessLevelKey>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="Shared\NavMenu.razor.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" NoWarn="NU1605" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.8" NoWarn="NU1605" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="3.1.0" />
+  </ItemGroup>
+
+</Project>

@@ -1,67 +1,61 @@
+using Blazored.LocalStorage;
+using BlazorWhoknowsV2;
+using BlazorWhoknowsV2.Data;
+using BlazorWhoknowsV2.Pages;
+using BlazorWhoknowsV2.Provider;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using WhoKnowsV2.util;
-using WhoKnowsV2.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
-
-builder.Services.AddRazorComponents(options =>
-    options.TemporaryRedirectionUrlValidityDuration =
-        TimeSpan.FromMinutes(7)).AddInteractiveServerComponents();
-
-// Add in-memory distributed cache
-builder.Services.AddDistributedMemoryCache();
-
-// Add HttpClient for backend API
-builder.Services.AddHttpClient("BackendAPI",client =>
-{
-    client.BaseAddress = new Uri("https://localhost:7100");
-});
-
-// Add session support
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
-
-// Add Authentication
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = "Cookies";
-    options.DefaultChallengeScheme = "Cookies";
-})
-.AddCookie("Cookies", options =>
-{
-    options.LoginPath = "/login"; // Redirects to the login page if not authenticated
-    options.Cookie.HttpOnly = true;
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-});
-
-// Add Authorization
-
-builder.Services.AddAuthorization();
-builder.Services.AddScoped<ProtectedLocalStorage>();
-builder.Services.AddTransient<ApiAuthenticationStateProvider>(); // Use Scoped instead of Transient
-builder.Services.AddScoped<AuthenticationStateProvider, ApiAuthenticationStateProvider>();
-
-builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddAuthorizationCore(options =>
-{
-    options.AddPolicy("AllowAnonymous", policy =>
+// Configure JWT Bearer authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        policy.RequireAssertion(context => true); // Allow everyone
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
     });
-});
 
+//IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+
+
+// Add services to the container.
+builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthenticationStateProvider>());
+
+builder.Services.AddAuthorizationCore();
+//builder.Services.AddScoped<IAuthorizationMiddlewareResultHandler, BlazorAuthorizationMiddlewareResultHandler>();
+builder.Services.AddScoped<DelegatingHandler, CustomHttpClientHandler>();
+
+
+
+//builder.Services.AddScoped(sp =>
+//{
+//    var client = new HttpClient { BaseAddress = new Uri("https://localhost:7100/") };
+//    return client;
+//});
+builder.Services.AddScoped<CustomHttpClientHandler>();
+
+builder.Services.AddHttpClient("ApiClient")
+    .AddHttpMessageHandler<CustomHttpClientHandler>();
+
+builder.Services.AddRazorPages();
+builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+builder.Services.AddSingleton<WeatherForecastService>();
 
 
 var app = builder.Build();
@@ -73,16 +67,18 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
 
+
+
+
+app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseRouting();
 app.UseAntiforgery();
 
-app.UseSession();
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseAuthentication();  // Ensure authentication is enabled
+app.UseAuthorization();   // Ensure authorization is enabled
 
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.Run();
