@@ -13,7 +13,7 @@
     <div class="alert alert-danger">@ErrorMessage</div>
 }
 
-<EditForm Model="loginRequest" OnValidSubmit="HandleLogin" FormName="this">
+<EditForm Model="loginRequest" OnValidSubmit="HandleLogin">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
@@ -30,41 +30,40 @@
 </EditForm>
 
 @code {
-   
     private LoginRequest loginRequest = new LoginRequest();
-    private string ErrorMessage;
+    private string ErrorMessage { get; set; } = string.Empty;
 
     private async Task HandleLogin()
     {
         try
         {
-            var response = await HttpClient.PostAsJsonAsync("https://localhost:7100/api/Login/login", loginRequest);
+            var response = await HttpClient.PostAsJsonAsync("https://localhost:7100/api/Login", loginRequest);
 
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
-                await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(result.Token);
+                var result = await response.Content.ReadAsStringAsync(); // Or ReadFromJsonAsync if you return JSON
                 NavigationManager.NavigateTo("/");
             }
             else
             {
-                ErrorMessage = "Invalid login attempt.";
+                var responseContent = await response.Content.ReadAsStringAsync();
+                ErrorMessage = $"Invalid login attempt: {responseContent}";
             }
+        }
+        catch (HttpRequestException ex)
+        {
+            ErrorMessage = $"Request error: {ex.Message}";
         }
         catch (Exception ex)
         {
-            ErrorMessage = "An error occurred during login.";
+            ErrorMessage = $"An unexpected error occurred: {ex.Message}";
         }
     }
 
+
     private class LoginRequest
     {
-        public string Username { get; set; }
-        public string Password { get; set; }
-    }
-
-    private class LoginResponse
-    {
-        public string Token { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 }
