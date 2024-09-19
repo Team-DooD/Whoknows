@@ -4,8 +4,10 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
 
+
 namespace BlazorWhoknowsV2.Provider
 {
+
     public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     {
         private readonly HttpClient _httpClient;
@@ -55,20 +57,10 @@ namespace BlazorWhoknowsV2.Provider
 
         private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
         {
-            try
-            {
-                var payload = jwt.Split('.')[1];
-                var jsonBytes = ParseBase64WithoutPadding(payload);
-                var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes) ?? new Dictionary<string, object>();
-                return keyValuePairs
-                    .Where(kvp => kvp.Value != null)
-                    .Select(kvp => new Claim(kvp.Key, kvp.Value.ToString()!));  // Use null-forgiving operator
-            }
-            catch (Exception)
-            {
-                // Handle errors (e.g., log them)
-                return Enumerable.Empty<Claim>();
-            }
+            var payload = jwt.Split('.')[1];
+            var jsonBytes = ParseBase64WithoutPadding(payload);
+            var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
+            return keyValuePairs.Select(kvp => new Claim(kvp.Key, kvp.Value.ToString()));
         }
 
         private byte[] ParseBase64WithoutPadding(string base64)
@@ -81,4 +73,6 @@ namespace BlazorWhoknowsV2.Provider
             return Convert.FromBase64String(base64);
         }
     }
+
+
 }
