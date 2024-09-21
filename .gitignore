@@ -6,3 +6,4 @@ appsettings.Development.json
 /obj/Debug
 /obj
 /.vs
+/publish

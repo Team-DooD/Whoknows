@@ -1,0 +1,48 @@
+name: Deploy Blazor/Razor Frontend and .NET Backend to Remote VM
+
+on:
+  push:
+    branches:
+      - main # or your desired branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build the project (Frontend & Backend)
+      run: dotnet build --configuration Release
+
+    - name: Publish the Blazor/Razor frontend and .NET backend
+      run: dotnet publish --configuration Release --output ./publish
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dotnet-frontend-backend
+        path: ./publish
+
+    - name: Deploy to remote VM
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        # Copy the published files to the remote server (adjust path as needed)
+        scp -i $SSH_PRIVATE_KEY -o StrictHostKeyChecking=no -r ./publish azureuser@40.87.131.145:/Frontend/
+
+        # SSH into the remote server, navigate to the app directory, and run the app
+        ssh -i $SSH_PRIVATE_KEY -o StrictHostKeyChecking=no azureuser@40.87.131.145 << 'EOF'
+          cd /Frontend/publish/
+          dotnet BlazorWhoKnowsV2.dll &
+          # Optionally, set up Nginx/Apache to serve the Blazor app
+        EOF
