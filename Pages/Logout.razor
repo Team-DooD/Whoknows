@@ -1,0 +1,43 @@
+﻿@page "/logout"
+@using System.Net.Http.Headers
+@using BlazorWhoknowsV2.Provider
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@inject CustomAuthenticationStateProvider AuthenticationStateProvider
+
+<h3>Logging out...</h3>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await HandleLogout();
+    }
+
+    private async Task HandleLogout()
+    {
+        try
+        {
+            // Call the API logout endpoint
+            var response = await HttpClient.PostAsync("https://localhost:7100/api/Login/logout", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Clear the authentication state using the Logout method
+                await AuthenticationStateProvider.Logout();
+
+                // Redirect the user to the login page
+                NavigationManager.NavigateTo("/login");
+            }
+            else
+            {
+                // Handle failure (optional)
+                Console.WriteLine("Failed to log out.");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle any exceptions (optional)
+            Console.WriteLine($"An error occurred during logout: {ex.Message}");
+        }
+    }
+}
