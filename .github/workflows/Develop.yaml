@@ -27,6 +27,10 @@ jobs:
     - name: Publish the Blazor/Razor frontend and .NET backend
       run: dotnet publish --configuration Release --output ./publish
 
+    # Check if publish folder exists and list its contents (for debugging)
+    - name: List published files
+      run: ls -al ./publish
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
@@ -37,12 +41,29 @@ jobs:
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
-        # Copy the published files to the remote server (adjust path as needed)
-        scp -i $SSH_PRIVATE_KEY -o StrictHostKeyChecking=no -r ./publish azureuser@40.87.131.145:/Frontend/
+        # Write the SSH key to a file
+        echo "$SSH_PRIVATE_KEY" > key.pem
+        chmod 600 key.pem
+
+        # Test the SSH connection (for debugging)
+        ssh -i key.pem -o StrictHostKeyChecking=no azureuser@40.87.131.145 "echo Connection Successful"
+
+        # Clean up old files on the remote server before deployment
+        ssh -i key.pem -o StrictHostKeyChecking=no azureuser@40.87.131.145 << 'EOF'
+          rm -rf /Frontend/publish/*
+          echo "Old files deleted from /Frontend/publish/"
+        EOF
+
+        # Copy the new published files to the remote server
+        scp -i key.pem -o StrictHostKeyChecking=no -r ./publish azureuser@40.87.131.145:/Frontend/
 
         # SSH into the remote server, navigate to the app directory, and run the app
-        ssh -i $SSH_PRIVATE_KEY -o StrictHostKeyChecking=no azureuser@40.87.131.145 << 'EOF'
+        ssh -i key.pem -o StrictHostKeyChecking=no azureuser@40.87.131.145 << 'EOF'
           cd /Frontend/publish/
           dotnet BlazorWhoKnowsV2.dll &
-          # Optionally, set up Nginx/Apache to serve the Blazor app
+          echo "Application started successfully"
         EOF
+
+    # Cleanup SSH key file after use
+    - name: Cleanup
+      run: rm -f key.pem
