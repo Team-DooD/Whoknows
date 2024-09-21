@@ -3,7 +3,7 @@ name: Deploy Blazor/Razor Frontend and .NET Backend to Remote VM
 on:
   push:
     branches:
-      - main # or your desired branch
+      - Develop
 
 jobs:
   deploy:
