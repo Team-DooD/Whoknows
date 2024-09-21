@@ -45,21 +45,15 @@ jobs:
         echo "$SSH_PRIVATE_KEY" > key.pem
         chmod 600 key.pem
 
-        # Test the SSH connection (for debugging)
-        ssh -i key.pem -o StrictHostKeyChecking=no azureuser@40.87.131.145 "echo Connection Successful"
-
-        # Clean up old files on the remote server before deployment
         ssh -i key.pem -o StrictHostKeyChecking=no azureuser@40.87.131.145 << 'EOF'
           rm -rf /Frontend/publish/*
           echo "Old files deleted from /Frontend/publish/"
         EOF
 
-        # Copy the new published files to the remote server
-        scp -i key.pem -o StrictHostKeyChecking=no -r ./publish azureuser@40.87.131.145:/Frontend/
+        scp -i key.pem -o StrictHostKeyChecking=no -r ./publish azureuser@40.87.131.145:Frontend/
 
-        # SSH into the remote server, navigate to the app directory, and run the app
         ssh -i key.pem -o StrictHostKeyChecking=no azureuser@40.87.131.145 << 'EOF'
-          cd /Frontend/publish/
+          cd Frontend/publish/
           dotnet BlazorWhoKnowsV2.dll &
           echo "Application started successfully"
         EOF
