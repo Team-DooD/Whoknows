@@ -1,0 +1,15 @@
+﻿/* site.css */
+
+/* Ensure the dropdown menu is on top of other content */
+.navbar-nav {
+    position: relative;
+    z-index: 1050; /* Bootstrap default z-index for dropdowns */
+}
+
+/* Adjust dropdown menu positioning */
+.navbar-nav .dropdown-menu {
+    position: absolute;
+    top: 100%; /* Position the dropdown directly below the nav item */
+    left: 0;
+    z-index: 1060; /* Higher than .navbar-nav */
+}

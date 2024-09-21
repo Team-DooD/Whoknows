@@ -1,5 +1,6 @@
 ﻿@page "/counter"
-@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Counter</PageTitle>
 
@@ -17,3 +18,4 @@
         currentCount++;
     }
 }
+
