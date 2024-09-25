@@ -13,64 +13,80 @@
     <div class="alert alert-danger">@ErrorMessage</div>
 }
 
-<EditForm Model="weatherRequest" OnValidSubmit="HandleWeatherRequest" FormName="this">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="form-group">
-        <label for="location">Location</label>
-        <InputText id="location" class="form-control" @bind-Value="weatherRequest.Location" />
-    </div>
-
-    <button type="submit" class="btn btn-primary">Get Weather</button>
-</EditForm>
-
-@if (weatherResponse != null)
+@if (!string.IsNullOrEmpty(weatherJson))
 {
-    <h4>Weather Results</h4>
-    <p><strong>Location:</strong> @weatherResponse.Location</p>
-    <p><strong>Temperature:</strong> @weatherResponse.Temperature</p>
-    <p><strong>Condition:</strong> @weatherResponse.Condition</p>
+    <h4>Weather Data</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date & Time</th>
+                <th>Temperature (°C)</th>
+                <th>Condition</th>
+                <th>Humidity (%)</th>
+                <th>Wind Speed (m/s)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                // Parse the weatherJson to extract data
+                var weatherData = System.Text.Json.JsonDocument.Parse(weatherJson);
+                var weatherList = weatherData.RootElement.GetProperty("list");
+
+                foreach (var entry in weatherList.EnumerateArray())
+                {
+                    var dateTime = entry.GetProperty("dt_txt").GetString();
+                    var temperature = entry.GetProperty("main").GetProperty("temp").GetDouble(); // Celsius
+                    var condition = entry.GetProperty("weather")[0].GetProperty("description").GetString();
+                    var humidity = entry.GetProperty("main").GetProperty("humidity").GetInt32();
+                    var windSpeed = entry.GetProperty("wind").GetProperty("speed").GetDouble();
+
+                    <tr>
+                        <td>@dateTime</td>
+                        <td>@temperature.ToString("F2").Replace('.', ',')</td> <!-- Format temperature to 2 decimal places and replace '.' with ',' -->
+                        <td>@condition</td>
+                        <td>@humidity</td>
+                        <td>@windSpeed</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No weather data available.</p>
 }
 
 @code {
-    private WeatherRequest weatherRequest = new WeatherRequest();
-    private WeatherResponse weatherResponse;
+    private string weatherJson;
     private string ErrorMessage;
 
-    private async Task HandleWeatherRequest()
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchWeatherData();
+    }
+
+    private async Task FetchWeatherData()
     {
         try
         {
-            var response = await HttpClient.PostAsJsonAsync("https://localhost:7100/api/weather", weatherRequest);
+            var response = await HttpClient.GetAsync("https://localhost:7100/api/weather");
 
             if (response.IsSuccessStatusCode)
             {
-                weatherResponse = await response.Content.ReadFromJsonAsync<WeatherResponse>();
-                ErrorMessage = null; // Clear previous error message
+                // Read the JSON response as a string
+                weatherJson = await response.Content.ReadAsStringAsync();
             }
             else
             {
                 ErrorMessage = "Failed to retrieve weather data. Please try again.";
-                weatherResponse = null; // Clear previous weather data
+                weatherJson = null; // Clear previous weather data
             }
         }
         catch (Exception ex)
         {
             ErrorMessage = "An error occurred while fetching the weather data.";
-            weatherResponse = null; // Clear previous weather data
+            weatherJson = null; // Clear previous weather data
         }
-    }
-
-    private class WeatherRequest
-    {
-        public string Location { get; set; }
-    }
-
-    private class WeatherResponse
-    {
-        public string Location { get; set; }
-        public string Temperature { get; set; }
-        public string Condition { get; set; }
     }
 }
