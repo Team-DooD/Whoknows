@@ -1,0 +1,119 @@
+﻿@page "/search"
+@using System.Net.Http.Headers
+@using BlazorWhoknowsV2.Provider
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [AllowAnonymous]
+
+<h3>Search</h3>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+
+<EditForm Model="searchRequest" OnValidSubmit="HandleSearch" FormName="this">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="query">Search Query</label>
+        <InputText id="query" class="form-control" @bind-Value="searchRequest.Query" />
+    </div>
+
+    <div class="form-group">
+        <label for="language">Language</label>
+        <InputText id="language" class="form-control" @bind-Value="searchRequest.Language" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Search</button>
+</EditForm>
+
+@if (searchResults != null && searchResults.Any())
+{
+    <h4>Search Results:</h4>
+    <ul class="list-group">
+        @foreach (var result in searchResults)
+        {
+            <li class="list-group-item">
+                <span @onclick="() => ToggleDetails(result.Id)" style="cursor: pointer; font-weight: bold;">
+                    @result.Title
+                </span>
+                @if (expandedIds.Contains(result.Id))
+                {
+                    <div class="details mt-2" style="border: 1px solid #ccc; padding: 10px; background-color: #f9f9f9;">
+                        <h5>Details:</h5>
+                        <p>@result.Content</p>
+                    </div>
+                }
+            </li>
+        }
+    </ul>
+}
+else if (searchPerformed)
+{
+    <p>No results found.</p>
+}
+
+@code {
+    private SearchRequest searchRequest = new SearchRequest();
+    private List<PageResult> searchResults = new List<PageResult>();
+    private bool searchPerformed = false;
+    private string ErrorMessage;
+    private HashSet<int> expandedIds = new HashSet<int>(); // Store expanded IDs
+
+    private async Task HandleSearch()
+    {
+        try
+        {
+            // Call the API endpoint for search
+            var response = await HttpClient.GetAsync($"https://localhost:7100/api/search?q={searchRequest.Query}&language={searchRequest.Language}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var resultWrapper = await response.Content.ReadFromJsonAsync<SearchResponse>();
+                searchResults = resultWrapper.SearchResults; // Getting search results from the API response
+                searchPerformed = true;
+            }
+            else
+            {
+                ErrorMessage = "Search failed. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "An error occurred during the search.";
+        }
+    }
+
+    private void ToggleDetails(int id)
+    {
+        if (expandedIds.Contains(id))
+        {
+            expandedIds.Remove(id); // Collapse if already expanded
+        }
+        else
+        {
+            expandedIds.Add(id); // Expand if not already expanded
+        }
+    }
+
+    private class SearchRequest
+    {
+        public string Query { get; set; } = string.Empty;
+        public string Language { get; set; } = "en";
+    }
+
+    private class SearchResponse
+    {
+        public List<PageResult> SearchResults { get; set; }
+    }
+
+    private class PageResult
+    {
+        public int Id { get; set; }  // Assuming an Id property exists for each page
+        public string Title { get; set; } // Title to display
+        public string Content { get; set; } // Content to display when expanded
+    }
+}
