@@ -10,54 +10,72 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up .NET SDK
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.x'
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "8.x"
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build the project (Frontend & Backend)
-      run: dotnet build --configuration Release
+      - name: Build the project (Frontend & Backend)
+        run: dotnet build --configuration Release
 
-    - name: Publish the Blazor/Razor frontend and .NET backend
-      run: dotnet publish --configuration Release --output ./publish
+      - name: Publish the Blazor/Razor frontend and .NET backend
+        run: dotnet publish --configuration Release --output ./publish
 
-    # Check if publish folder exists and list its contents (for debugging)
-    - name: List published files
-      run: ls -al ./publish
+      # Check if publish folder exists and list its contents (for debugging)
+      - name: List published files
+        run: ls -al ./publish
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: dotnet-frontend-backend
-        path: ./publish
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dotnet-frontend-backend
+          path: ./publish
 
-    - name: Deploy to remote VM
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      run: |
-        # Write the SSH key to a file
-        echo "$SSH_PRIVATE_KEY" > key.pem
-        chmod 600 key.pem
+      - name: Create appsettings.json file
+        run: |
+          cat <<EOF > ./publish/appsettings.json
+          {
+            "Logging": {
+              "LogLevel": {
+                "Default": "Information",
+                "Microsoft.AspNetCore": "Warning"
+              }
+            },
+            "Jwt": {
+              "Key": "${{ secrets.JWT_SECRET_KEY }}",
+              "Issuer": "${{ secrets.JWT_ISSUER }}",
+              "Audience": "${{ secrets.JWT_AUDIENCE }}"
+            }
+          }
+          EOF
 
-        ssh -i key.pem -o StrictHostKeyChecking=no azureuser@40.87.131.145 << 'EOF'
-          rm -rf /Frontend/publish/*
-          echo "Old files deleted from /Frontend/publish/"
-        EOF
+      - name: Deploy to remote VM
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          # Write the SSH key to a file
+          echo "$SSH_PRIVATE_KEY" > key.pem
+          chmod 600 key.pem
 
-        scp -i key.pem -o StrictHostKeyChecking=no -r ./publish azureuser@40.87.131.145:Frontend/
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@40.87.131.145 << 'EOF'
+            rm -rf /Frontend/publish/*
+            echo "Old files deleted from /Frontend/publish/"
+          EOF
 
-        ssh -i key.pem -o StrictHostKeyChecking=no azureuser@40.87.131.145 << 'EOF'
-          cd Frontend/publish/
-          dotnet BlazorWhoKnowsV2.dll &
-          echo "Application started successfully"
-        EOF
+          scp -i key.pem -o StrictHostKeyChecking=no -r ./publish azureuser@40.87.131.145:Frontend/
 
-    # Cleanup SSH key file after use
-    - name: Cleanup
-      run: rm -f key.pem
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@40.87.131.145 << 'EOF'
+            cd Frontend/publish/
+            dotnet BlazorWhoKnowsV2.dll &
+            echo "Application started successfully"
+          EOF
+
+      # Cleanup SSH key file after use
+      - name: Cleanup
+        run: rm -f key.pem
