@@ -6,4 +6,7 @@ appsettings.Development.json
 /obj/Debug
 /obj
 /.vs
+<<<<<<< Updated upstream
+=======
 /publish
+>>>>>>> Stashed changes
