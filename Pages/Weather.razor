@@ -1,0 +1,92 @@
+﻿@page "/weather"
+@using System.Net.Http.Headers
+@using BlazorWhoknowsV2.Provider
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [AllowAnonymous]
+
+<h3>Weather Forecast</h3>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+
+@if (!string.IsNullOrEmpty(weatherJson))
+{
+    <h4>Weather Data</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date & Time</th>
+                <th>Temperature (°C)</th>
+                <th>Condition</th>
+                <th>Humidity (%)</th>
+                <th>Wind Speed (m/s)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                // Parse the weatherJson to extract data
+                var weatherData = System.Text.Json.JsonDocument.Parse(weatherJson);
+                var weatherList = weatherData.RootElement.GetProperty("list");
+
+                foreach (var entry in weatherList.EnumerateArray())
+                {
+                    var dateTime = entry.GetProperty("dt_txt").GetString();
+                    var temperature = entry.GetProperty("main").GetProperty("temp").GetDouble(); // Celsius
+                    var condition = entry.GetProperty("weather")[0].GetProperty("description").GetString();
+                    var humidity = entry.GetProperty("main").GetProperty("humidity").GetInt32();
+                    var windSpeed = entry.GetProperty("wind").GetProperty("speed").GetDouble();
+
+                    <tr>
+                        <td>@dateTime</td>
+                        <td>@temperature.ToString("F2").Replace('.', ',')</td> <!-- Format temperature to 2 decimal places and replace '.' with ',' -->
+                        <td>@condition</td>
+                        <td>@humidity</td>
+                        <td>@windSpeed</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No weather data available.</p>
+}
+
+@code {
+    private string weatherJson;
+    private string ErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchWeatherData();
+    }
+
+    private async Task FetchWeatherData()
+    {
+        try
+        {
+            var response = await HttpClient.GetAsync("https://40.87.131.145/api/weather");
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Read the JSON response as a string
+                weatherJson = await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                ErrorMessage = "Failed to retrieve weather data. Please try again.";
+                weatherJson = null; // Clear previous weather data
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "An error occurred while fetching the weather data.";
+            weatherJson = null; // Clear previous weather data
+        }
+    }
+}

@@ -38,7 +38,7 @@
     {
         try
         {
-            var response = await HttpClient.PostAsJsonAsync("https://localhost:7100/api/Login/login", loginRequest);
+            var response = await HttpClient.PostAsJsonAsync("https://40.87.131.145/api/login", loginRequest);
 
             if (response.IsSuccessStatusCode)
             {
