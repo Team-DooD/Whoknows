@@ -15,7 +15,7 @@
 
 @if (!string.IsNullOrEmpty(weatherJson))
 {
-    <h4>Weather Data</h4>
+    <h4>Weather Datas</h4>
     <table class="table table-striped">
         <thead>
             <tr>
@@ -70,7 +70,9 @@ else
     {
         try
         {
-            var response = await HttpClient.GetAsync("https://localhost:7100/api/weather");
+
+            var response = await HttpClient.GetAsync("/api/weather");
+
 
             if (response.IsSuccessStatusCode)
             {
