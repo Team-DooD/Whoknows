@@ -70,7 +70,9 @@ else
     {
         try
         {
-            var response = await HttpClient.GetAsync("/api/weather");
+
+            var response = await HttpClient.GetAsync("http://40.87.131.145/api/weather");
+
 
             if (response.IsSuccessStatusCode)
             {

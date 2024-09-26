@@ -41,6 +41,16 @@ jobs:
         run: |
           cat <<EOF > ./publish/appsettings.json
           {
+             "Kestrel": {
+            "Endpoints": {
+              "Http": {
+                "Url": "http://localhost:5001"
+              },
+              "Https": {
+                "Url": "https://localhost:5000"
+              }
+            }
+          },
             "Logging": {
               "LogLevel": {
                 "Default": "Information",
