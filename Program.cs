@@ -1,6 +1,5 @@
 using Blazored.LocalStorage;
 using BlazorWhoknowsV2;
-using BlazorWhoknowsV2.Data;
 using BlazorWhoknowsV2.Pages;
 using BlazorWhoknowsV2.Provider;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -55,7 +54,6 @@ builder.Services.AddHttpClient("ApiClient")
 
 builder.Services.AddRazorPages();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
-builder.Services.AddSingleton<WeatherForecastService>();
 
 
 var app = builder.Build();
