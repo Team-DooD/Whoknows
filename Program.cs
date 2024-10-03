@@ -24,7 +24,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+            
         };
     });
 
@@ -54,6 +55,7 @@ builder.Services.AddScoped<DelegatingHandler, CustomHttpClientHandler>();
 
 
 
+
 //builder.Services.AddScoped(sp =>
 //{
 //    var client = new HttpClient { BaseAddress = new Uri("https://localhost:7100/") };
@@ -61,8 +63,15 @@ builder.Services.AddScoped<DelegatingHandler, CustomHttpClientHandler>();
 //});
 builder.Services.AddScoped<CustomHttpClientHandler>();
 
-builder.Services.AddHttpClient("ApiClient")
-    .AddHttpMessageHandler<CustomHttpClientHandler>();
+
+
+
+builder.Services.AddHttpClient("ApiClient", client =>
+{
+    // Set up your base address and other configurations
+    string baseUrl = builder.Configuration["Linked:Url"];
+    client.BaseAddress = new Uri(baseUrl);
+});
 
 builder.Services.AddRazorPages();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
