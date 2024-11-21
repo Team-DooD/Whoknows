@@ -71,6 +71,7 @@ builder.Services.AddHttpClient("ApiClient", client =>
     // Set up your base address and other configurations
     string baseUrl = builder.Configuration["Linked:Url"];
     client.BaseAddress = new Uri(baseUrl);
+    Console.WriteLine("Using this backend:" + client.BaseAddress);
 });
 
 builder.Services.AddRazorPages();
