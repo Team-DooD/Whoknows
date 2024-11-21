@@ -71,6 +71,8 @@ else if (searchPerformed)
             var client = HttpClientFactory.CreateClient("ApiClient");
             var response = await client.GetAsync($"search?q={searchRequest.Query}&language={searchRequest.Language}");
 
+            Console.WriteLine("Response:" + response);
+
             if (response.IsSuccessStatusCode)
             {
                 var resultWrapper = await response.Content.ReadFromJsonAsync<List<PageResult>>(); // Deserialize the response
@@ -113,11 +115,11 @@ else if (searchPerformed)
 
     private class PageResult
     {
-        public int Id { get; set; }
+        public int? Id { get; set; }
         public string Title { get; set; } // Title of the page
         public string Url { get; set; }   // URL of the page
         public string Language { get; set; } // Language of the page
-        public DateTime LastUpdated { get; set; } // Last updated timestamp
+        public DateTime? LastUpdated { get; set; } // Last updated timestamp
         public string Content { get; set; } // The content or snippet of the page
     }
 }
