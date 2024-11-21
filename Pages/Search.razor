@@ -62,7 +62,7 @@ else if (searchPerformed)
     private List<PageResult> searchResults = new List<PageResult>();
     private bool searchPerformed = false;
     private string ErrorMessage;
-    private HashSet<int> expandedIds = new HashSet<int>(); // Store expanded IDs
+    private HashSet<int?> expandedIds = new HashSet<int?>(); // Store expanded IDs
 
     private async Task HandleSearch()
     {
@@ -90,7 +90,7 @@ else if (searchPerformed)
         }
     }
 
-    private void ToggleDetails(int id)
+    private void ToggleDetails(int? id)
     {
         if (expandedIds.Contains(id))
         {
