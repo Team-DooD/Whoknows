@@ -31,4 +31,12 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\Users\SurfaceLaptop\Documents\GitHub\Whoknows\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="C:\Users\SurfaceLaptop\Documents\GitHub\Whoknows\.editorconfig" />
+  </ItemGroup>
+
 </Project>

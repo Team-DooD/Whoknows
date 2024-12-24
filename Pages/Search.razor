@@ -2,6 +2,7 @@
 @using System.Net.Http.Headers
 @using BlazorWhoknowsV2.Provider
 @inject HttpClient HttpClient
+@inject IHttpClientFactory HttpClientFactory // Inject IHttpClientFactory
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [AllowAnonymous]
@@ -61,19 +62,21 @@ else if (searchPerformed)
     private List<PageResult> searchResults = new List<PageResult>();
     private bool searchPerformed = false;
     private string ErrorMessage;
-    private HashSet<int> expandedIds = new HashSet<int>(); // Store expanded IDs
+    private HashSet<int?> expandedIds = new HashSet<int?>(); // Store expanded IDs
 
     private async Task HandleSearch()
     {
         try
         {
-            // Call the API endpoint for search
-            var response = await HttpClient.GetAsync($"https://40.87.131.145/api/search?q={searchRequest.Query}&language={searchRequest.Language}");
+            var client = HttpClientFactory.CreateClient("ApiClient");
+            var response = await client.GetAsync($"search?q={searchRequest.Query}&language={searchRequest.Language}");
+
+            Console.WriteLine("Response:" + response);
 
             if (response.IsSuccessStatusCode)
             {
-                var resultWrapper = await response.Content.ReadFromJsonAsync<SearchResponse>();
-                searchResults = resultWrapper.SearchResults; // Getting search results from the API response
+                var resultWrapper = await response.Content.ReadFromJsonAsync<List<PageResult>>(); // Deserialize the response
+                searchResults = resultWrapper; // Directly assign the list of results
                 searchPerformed = true;
             }
             else
@@ -83,11 +86,11 @@ else if (searchPerformed)
         }
         catch (Exception ex)
         {
-            ErrorMessage = "An error occurred during the search.";
+            ErrorMessage = $"An error occurred during the search: {ex.Message}";
         }
     }
 
-    private void ToggleDetails(int id)
+    private void ToggleDetails(int? id)
     {
         if (expandedIds.Contains(id))
         {
@@ -107,13 +110,16 @@ else if (searchPerformed)
 
     private class SearchResponse
     {
-        public List<PageResult> SearchResults { get; set; }
+        public List<PageResult> Results { get; set; } // Example of renaming the property based on the API response
     }
 
     private class PageResult
     {
-        public int Id { get; set; }  // Assuming an Id property exists for each page
-        public string Title { get; set; } // Title to display
-        public string Content { get; set; } // Content to display when expanded
+        public int? Id { get; set; }
+        public string Title { get; set; } // Title of the page
+        public string Url { get; set; }   // URL of the page
+        public string Language { get; set; } // Language of the page
+        public DateTime? LastUpdated { get; set; } // Last updated timestamp
+        public string Content { get; set; } // The content or snippet of the page
     }
 }

@@ -2,6 +2,7 @@
 @using System.Net.Http.Headers
 @using BlazorWhoknowsV2.Provider
 @inject HttpClient HttpClient
+@inject IHttpClientFactory HttpClientFactory // Inject IHttpClientFactory
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [AllowAnonymous]
@@ -9,13 +10,14 @@
 <h3>Weather Forecast</h3>
 
 @if (!string.IsNullOrEmpty(ErrorMessage))
+
 {
     <div class="alert alert-danger">@ErrorMessage</div>
 }
 
 @if (!string.IsNullOrEmpty(weatherJson))
+
 {
-    <h4>Weather Datas</h4>
     <table class="table table-striped">
         <thead>
             <tr>
@@ -52,6 +54,7 @@
         </tbody>
     </table>
 }
+
 else
 {
     <p>No weather data available.</p>
@@ -70,9 +73,8 @@ else
     {
         try
         {
-
-            var response = await HttpClient.GetAsync("http://40.87.131.145/api/weather");
-
+            var client = HttpClientFactory.CreateClient("ApiClient"); // Use the injected IHttpClientFactory
+            var response = await client.GetAsync("weather"); // Relative URL, BaseAddress is already set
 
             if (response.IsSuccessStatusCode)
             {
@@ -82,13 +84,14 @@ else
             else
             {
                 ErrorMessage = "Failed to retrieve weather data. Please try again.";
-                weatherJson = null; // Clear previous weather data
             }
         }
+
         catch (Exception ex)
+
         {
-            ErrorMessage = "An error occurred while fetching the weather data.";
-            weatherJson = null; // Clear previous weather data
+            ErrorMessage = $"An error occurred while fetching the weather data: {ex.Message}";
         }
+
     }
 }
