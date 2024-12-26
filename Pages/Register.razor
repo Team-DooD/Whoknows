@@ -2,6 +2,7 @@
 @using System.Net.Http.Headers
 @using BlazorWhoknowsV2.Provider
 @inject HttpClient HttpClient
+@inject IHttpClientFactory HttpClientFactory // Inject IHttpClientFactory
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [AllowAnonymous]
@@ -42,7 +43,12 @@
     {
         try
         {
-            var response = await HttpClient.PostAsJsonAsync("https://40.87.131.145/api/register", registerRequest);
+            
+
+            var client = HttpClientFactory.CreateClient("ApiClient");
+            var response = await client.PostAsJsonAsync("register", registerRequest);
+
+            //var response = await HttpClient.PostAsJsonAsync("https://teamdood.dk/api/register", registerRequest);
 
             if (response.IsSuccessStatusCode)
             {

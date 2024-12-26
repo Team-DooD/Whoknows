@@ -2,6 +2,7 @@
 @using System.Net.Http.Headers
 @using BlazorWhoknowsV2.Provider
 @inject HttpClient HttpClient
+@inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager NavigationManager
 @inject CustomAuthenticationStateProvider AuthenticationStateProvider
 
@@ -18,7 +19,9 @@
         try
         {
             // Call the API logout endpoint
-            var response = await HttpClient.PostAsync("https://40.87.131.145/api/logout", null);
+
+            var client = HttpClientFactory.CreateClient("ApiClient");
+            var response = await client.PostAsync("logout", null);
 
             if (response.IsSuccessStatusCode)
             {

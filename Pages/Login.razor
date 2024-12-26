@@ -2,6 +2,7 @@
 @using System.Net.Http.Headers
 @using BlazorWhoknowsV2.Provider
 @inject HttpClient HttpClient
+@inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [AllowAnonymous]
@@ -41,7 +42,8 @@ hey *@
     {
         try
         {
-            var response = await HttpClient.PostAsJsonAsync("https://40.87.131.145/api/login", loginRequest);
+            var client = HttpClientFactory.CreateClient("ApiClient");
+            var response = await client.PostAsJsonAsync("login", loginRequest);
 
             if (response.IsSuccessStatusCode)
             {
