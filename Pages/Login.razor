@@ -5,13 +5,13 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IConfiguration Configuration
+@inject IJSRuntime JSRuntime
+
 @attribute [AllowAnonymous]
 
 <h3>Login</h3>
 
-
-@* 
-hey *@
 @if (!string.IsNullOrEmpty(ErrorMessage))
 {
     <div class="alert alert-danger">@ErrorMessage</div>
@@ -30,18 +30,45 @@ hey *@
         <InputText id="password" type="password" class="form-control" @bind-Value="loginRequest.Password" />
     </div>
 
+    <!-- Add reCAPTCHA -->
+    <div id="captcha-container" class="form-group">
+        <div class="g-recaptcha" data-sitekey="@SiteKey"></div>
+    </div>
+
     <button type="submit" class="btn btn-primary">Login</button>
 </EditForm>
 
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
 @code {
-   
     private LoginRequest loginRequest = new LoginRequest();
     private string ErrorMessage;
+    private string SiteKey;
+
+    protected override void OnInitialized()
+    {
+        // Load the site key from configuration (environment variable or appsettings.json)
+        SiteKey = Configuration["GoogleCaptcha:SiteKey"];
+    }
 
     private async Task HandleLogin()
     {
         try
         {
+            // Get the CAPTCHA response token from the client
+
+            var captchaResponse = await JSRuntime.InvokeAsync<string>("grecaptcha.getResponse", null);
+
+
+            if (string.IsNullOrEmpty(captchaResponse))
+            {
+                ErrorMessage = "Please verify you are not a robot.";
+                return;
+            }
+
+            // Include the CAPTCHA response in the login request
+            loginRequest.CaptchaResponse = captchaResponse;
+
             var client = HttpClientFactory.CreateClient("ApiClient");
             var response = await client.PostAsJsonAsync("login", loginRequest);
 
@@ -49,6 +76,7 @@ hey *@
             {
                 var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
                 await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(result.Token);
+                Console.WriteLine($"Token stored: {result.Token}");
                 NavigationManager.NavigateTo("/");
             }
             else
@@ -66,6 +94,7 @@ hey *@
     {
         public string Username { get; set; }
         public string Password { get; set; }
+        public string CaptchaResponse { get; set; } // Add CAPTCHA response field
     }
 
     private class LoginResponse

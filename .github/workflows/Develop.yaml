@@ -62,6 +62,10 @@ jobs:
               "Issuer": "${{ secrets.JWT_ISSUER }}",
               "Audience": "${{ secrets.JWT_AUDIENCE }}"
             },
+            "GoogleCaptcha": {
+                "SiteKey": "${{ secrets.GOOGLE_SITEKEY }}"
+              
+              },
             "Linked": {
               "Url": "${{ secrets.BASE_URL }}"  
             }
