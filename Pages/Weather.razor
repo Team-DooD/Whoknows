@@ -6,59 +6,120 @@
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [AllowAnonymous]
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3 class="text-center mb-4">Weather Forecast 🌤️</h3>
 
-<h3>Weather Forecast</h3>
+                    @if (!string.IsNullOrEmpty(ErrorMessage))
+                    {
+                        <div class="alert alert-danger text-center">@ErrorMessage</div>
+                    }
 
-@if (!string.IsNullOrEmpty(ErrorMessage))
+                    @if (!string.IsNullOrEmpty(weatherJson))
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle text-center">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Temperature (°C)</th>
+                                        <th>Condition</th>
+                                        <th>Humidity (%)</th>
+                                        <th>Wind Speed (m/s)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        // Parse the weatherJson to extract data from backend
+                                        var weatherData = System.Text.Json.JsonDocument.Parse(weatherJson);
+                                        var weatherList = weatherData.RootElement.GetProperty("list");
 
-{
-    <div class="alert alert-danger">@ErrorMessage</div>
+                                        foreach (var entry in weatherList.EnumerateArray())
+                                        {
+                                            var dateTime = entry.GetProperty("dt_txt").GetString();
+                                            var temperature = entry.GetProperty("main").GetProperty("temp").GetDouble();
+                                            var condition = entry.GetProperty("weather")[0].GetProperty("description").GetString();
+                                            var humidity = entry.GetProperty("main").GetProperty("humidity").GetInt32();
+                                            var windSpeed = entry.GetProperty("wind").GetProperty("speed").GetDouble();
+
+                                            // icons or animations conditions ->
+                                          
+                                            var iconClass = windSpeed > 6 ? "wind" : condition.Contains("clear sky") ? "sun" : "cloud";
+
+                                            <tr>
+                                                <td>@dateTime</td>
+                                                <td>@temperature.ToString("F2").Replace('.', ',')</td>
+                                                <td>
+                                                    <span class="@iconClass">
+                                                        @(condition.Contains("wind") ? "💨" : condition.Contains("clear sky") ? "☀️" : "☁️")
+                                                    </span>
+                                                    @condition
+                                                </td>
+                                                <td>@humidity</td>
+                                                <td>@windSpeed</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info text-center">
+                            No weather data available.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    /* Styling should be in its own CSS maybe */
+    @@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+.sun {
+    display: inline-block;
+    animation: spin 10s linear infinite;
+    font-size: 1.5rem;
 }
 
-@if (!string.IsNullOrEmpty(weatherJson))
-
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Date & Time</th>
-                <th>Temperature (°C)</th>
-                <th>Condition</th>
-                <th>Humidity (%)</th>
-                <th>Wind Speed (m/s)</th>
-            </tr>
-        </thead>
-        <tbody>
-            @{
-                // Parse the weatherJson to extract data
-                var weatherData = System.Text.Json.JsonDocument.Parse(weatherJson);
-                var weatherList = weatherData.RootElement.GetProperty("list");
-
-                foreach (var entry in weatherList.EnumerateArray())
-                {
-                    var dateTime = entry.GetProperty("dt_txt").GetString();
-                    var temperature = entry.GetProperty("main").GetProperty("temp").GetDouble(); // Celsius
-                    var condition = entry.GetProperty("weather")[0].GetProperty("description").GetString();
-                    var humidity = entry.GetProperty("main").GetProperty("humidity").GetInt32();
-                    var windSpeed = entry.GetProperty("wind").GetProperty("speed").GetDouble();
-
-                    <tr>
-                        <td>@dateTime</td>
-                        <td>@temperature.ToString("F2").Replace('.', ',')</td> <!-- Format temperature to 2 decimal places and replace '.' with ',' -->
-                        <td>@condition</td>
-                        <td>@humidity</td>
-                        <td>@windSpeed</td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
+/* Wind Animation */
+@@keyframes move {
+    0% {
+        transform: translateX(-10px);
+    }
+    50% {
+        transform: translateX(10px);
+    }
+    100% {
+        transform: translateX(-10px);
+    }
+}
+.wind {
+    display: inline-block;
+    animation: move 2s ease-in-out infinite;
+    font-size: 1.5rem;
 }
 
-else
-{
-    <p>No weather data available.</p>
+/* Cloud Styling */
+.cloud {
+    font-size: 1.5rem;
+    color: #6c757d;
 }
+</style>
 
 @code {
     private string weatherJson;
@@ -73,12 +134,13 @@ else
     {
         try
         {
-            var client = HttpClientFactory.CreateClient("ApiClient"); // Use the injected IHttpClientFactory
-            var response = await client.GetAsync("weather"); // Relative URL, BaseAddress is already set
+            // Use the injected custom IHttpClientFactory
+            var client = HttpClientFactory.CreateClient("ApiClient"); 
+            var response = await client.GetAsync("weather"); 
 
             if (response.IsSuccessStatusCode)
             {
-                // Read the JSON response as a string
+                
                 weatherJson = await response.Content.ReadAsStringAsync();
             }
             else

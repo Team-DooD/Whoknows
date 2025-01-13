@@ -7,36 +7,64 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IConfiguration Configuration
 @inject IJSRuntime JSRuntime
-
 @attribute [AllowAnonymous]
 
-<h3>Login</h3>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3 class="text-center mb-4">Login</h3>
 
-@if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <div class="alert alert-danger">@ErrorMessage</div>
-}
+                    @if (!string.IsNullOrEmpty(ErrorMessage))
+                    {
+                        <div class="alert alert-danger text-center">@ErrorMessage</div>
+                    }
 
-<EditForm Model="loginRequest" OnValidSubmit="HandleLogin" FormName="this">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+                    <EditForm Model="loginRequest" OnValidSubmit="HandleLogin" FormName="this">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
 
-    <div class="form-group">
-        <label for="username">Username</label>
-        <InputText id="username" class="form-control" @bind-Value="loginRequest.Username" />
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <InputText id="username" class="form-control" @bind-Value="loginRequest.Username" placeholder="Enter your username" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <InputText id="password" type="password" class="form-control" @bind-Value="loginRequest.Password" placeholder="Enter your password" />
+                        </div>
+
+                        <!-- Add reCAPTCHA -->
+                        <div id="captcha-container" class="mb-3 text-center">
+                            <div class="g-recaptcha" data-sitekey="@SiteKey"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </EditForm>
+                </div>
+                <div class="card-footer text-center">
+                    <small class="text-muted">
+                        Don't have an account yet?
+                        <button @onclick="ShowRegister" class="btn btn-link text-decoration-none">Create Account</button>.
+                    </small>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="form-group">
-        <label for="password">Password</label>
-        <InputText id="password" type="password" class="form-control" @bind-Value="loginRequest.Password" />
-    </div>
 
-    <!-- Add reCAPTCHA -->
-    <div id="captcha-container" class="form-group">
-        <div class="g-recaptcha" data-sitekey="@SiteKey"></div>
-    </div>
+    <!-- Register Component, Show/Hide Based on the flag -->
+    @if (showRegister)
+    {
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="register-container animated fadeIn">
+                    <Register />
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
-    <button type="submit" class="btn btn-primary">Login</button>
-</EditForm>
 
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
@@ -44,6 +72,7 @@
     private LoginRequest loginRequest = new LoginRequest();
     private string ErrorMessage;
     private string SiteKey;
+    private bool showRegister = false;
 
     protected override void OnInitialized()
     {
@@ -88,6 +117,11 @@
         {
             ErrorMessage = "An error occurred during login.";
         }
+    }
+
+    private void ShowRegister()
+    {
+        showRegister = !showRegister;
     }
 
     private class LoginRequest

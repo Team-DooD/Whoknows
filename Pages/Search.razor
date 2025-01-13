@@ -7,55 +7,70 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [AllowAnonymous]
 
-<h3>Search</h3>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3 class="text-center mb-4">Search</h3>
 
-@if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <div class="alert alert-danger">@ErrorMessage</div>
-}
+                    @if (!string.IsNullOrEmpty(ErrorMessage))
+                    {
+                        <div class="alert alert-danger text-center">@ErrorMessage</div>
+                    }
 
-<EditForm Model="searchRequest" OnValidSubmit="HandleSearch" FormName="this">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+                    <EditForm Model="searchRequest" OnValidSubmit="HandleSearch" FormName="this">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
 
-    <div class="form-group">
-        <label for="query">Search Query</label>
-        <InputText id="query" class="form-control" @bind-Value="searchRequest.Query" />
+                        <div class="mb-3">
+                            <label for="query" class="form-label">Search Query</label>
+                            <InputText id="query" class="form-control" @bind-Value="searchRequest.Query" placeholder="Enter your search query" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="language" class="form-label">Language</label>
+                            <InputText id="language" class="form-control" @bind-Value="searchRequest.Language" placeholder="Enter the language" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Search</button>
+                    </EditForm>
+                </div>
+            </div>
+
+            @if (searchResults != null && searchResults.Any())
+            {
+                <div class="mt-4">
+                    <h4 class="text-center mb-3">Search Results</h4>
+                    <ul class="list-group">
+                        @foreach (var result in searchResults)
+                        {
+                            <li class="list-group-item">
+                                <span @onclick="() => ToggleDetails(result.Id)" class="fw-bold text-primary" style="cursor: pointer;">
+                                    @result.Title
+                                </span>
+                                @if (expandedIds.Contains(result.Id))
+                                {
+                                    <div class="details mt-2 p-3 border rounded bg-light">
+                                        <h5>Details:</h5>
+                                        <p>@result.Content</p>
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+            else if (searchPerformed)
+            {
+                <div class="alert alert-info mt-4 text-center">
+                    No results found.
+                </div>
+            }
+        </div>
     </div>
+</div>
 
-    <div class="form-group">
-        <label for="language">Language</label>
-        <InputText id="language" class="form-control" @bind-Value="searchRequest.Language" />
-    </div>
-
-    <button type="submit" class="btn btn-primary">Search</button>
-</EditForm>
-
-@if (searchResults != null && searchResults.Any())
-{
-    <h4>Search Results:</h4>
-    <ul class="list-group">
-        @foreach (var result in searchResults)
-        {
-            <li class="list-group-item">
-                <span @onclick="() => ToggleDetails(result.Id)" style="cursor: pointer; font-weight: bold;">
-                    @result.Title
-                </span>
-                @if (expandedIds.Contains(result.Id))
-                {
-                    <div class="details mt-2" style="border: 1px solid #ccc; padding: 10px; background-color: #f9f9f9;">
-                        <h5>Details:</h5>
-                        <p>@result.Content</p>
-                    </div>
-                }
-            </li>
-        }
-    </ul>
-}
-else if (searchPerformed)
-{
-    <p>No results found.</p>
-}
 
 @code {
     private SearchRequest searchRequest = new SearchRequest();
