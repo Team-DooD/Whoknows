@@ -3,7 +3,7 @@ name: Deploy Blazor/Razor Frontend and .NET Backend to Remote VM
 on:
   push:
     branches:
-      - Develop
+      - production/*
 
 jobs:
   deploy:
@@ -27,7 +27,7 @@ jobs:
       - name: Publish the Blazor/Razor frontend and .NET backend
         run: dotnet publish --configuration Release --output ./publish
 
-      # Check if publish folder exists and list its contents (for debugging)
+      # Check publish folder exists and list its contents (for debugging) here ---->
       - name: List published files
         run: ls -al ./publish
 
@@ -76,7 +76,7 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          # Write the SSH key to a file
+          # Write the SSH key to a file to use in connection ->
           echo "$SSH_PRIVATE_KEY" > key.pem
           chmod 600 key.pem
 
@@ -93,6 +93,6 @@ jobs:
             echo "Application started successfully"
           EOF
 
-      # Cleanup SSH key file after use
+      # SSH key file removal after use
       - name: Cleanup
         run: rm -f key.pem
