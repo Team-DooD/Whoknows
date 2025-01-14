@@ -4,11 +4,11 @@
 @inject IHttpClientFactory HttpClientFactory 
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
-
+@inject IConfiguration Configuration
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [AllowAnonymous]
 
-<div class=" mt-5">
+<div class="mb-5 mt-5">
     <div class="row justify-content-center">
         <div class="col-md-12 ">
             <div class="card shadow-lg">
@@ -48,6 +48,10 @@
                                 <InputText id="password" type="password" class="form-control" @bind-Value="registerRequest.Password" placeholder="Enter your password" />
                             </div>
 
+                            <div id="captcha-container" class="mb-3 text-center">
+                                <div class="g-recaptcha" data-sitekey="@SiteKey2"></div>
+                            </div>
+
                             <button type="submit" class="btn btn-primary w-100">Register</button>
                         </EditForm>
                     }
@@ -55,7 +59,7 @@
             </div>
         </div>
     </div>
-</div>
+</div >
 
 <!-- Fireworks Animation -->
 <style>
@@ -107,21 +111,38 @@ function triggerFireworks() {
         firework.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 70%)`;
         container.appendChild(firework);
 
-        // Remove the firework after animation
+        // Remove firework after
         setTimeout(() => firework.remove(), 1500);
     }
 }
 </script>
-
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 @code {
     private RegisterRequest registerRequest = new RegisterRequest();
     private string ErrorMessage;
     private bool success = false;
+    private string SiteKey2;
+
+    protected override void OnInitialized()
+    {
+        // Load the site key from configuration (environment variable or appsettings.json)
+        SiteKey2 = Configuration["GoogleCaptcha:SiteKey"];
+    }
 
     private async Task HandleRegister()
     {
         try
         {
+
+            var captchaResponse2 = await JSRuntime.InvokeAsync<string>("grecaptcha.getResponse", null);
+        //     Console.WriteLine(captchaResponse2 + "HERE");
+
+        // if (string.IsNullOrEmpty(captchaResponse2))
+        //     {
+        //         ErrorMessage = "Please verify you are not a robot.";
+        //         return;
+        //     }
+
             var client = HttpClientFactory.CreateClient("ApiClient");
             var response = await client.PostAsJsonAsync("register", registerRequest);
 
@@ -129,7 +150,26 @@ function triggerFireworks() {
             {
                 success = true;
 
-                // Trigger fireworks animation
+
+                var loginResponse = await client.PostAsJsonAsync("login", new LoginRequest
+                    {
+                        Username = registerRequest.Username,
+                        Password = registerRequest.Password,
+                        CaptchaResponse = captchaResponse2
+                    });
+
+                if (loginResponse.IsSuccessStatusCode)
+                {
+                    var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+                    await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(loginResult.Token);
+                    NavigationManager.NavigateTo("/"); // Redirect to the home page after successful login
+                }
+                else
+                {
+                    ErrorMessage = "Registration successful, but automatic login failed. Please try logging in manually.";
+                }
+
+
                 await JSRuntime.InvokeVoidAsync("triggerFireworks");
             }
             else
@@ -148,5 +188,17 @@ function triggerFireworks() {
         public string Username { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
+    }
+
+
+    private class LoginRequest
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+        public string CaptchaResponse { get; set; } // Add CAPTCHA response field
+    }
+    private class LoginResponse
+    {
+        public string Token { get; set; }
     }
 }

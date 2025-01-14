@@ -34,12 +34,15 @@
                             <InputText id="password" type="password" class="form-control" @bind-Value="loginRequest.Password" placeholder="Enter your password" />
                         </div>
 
-                        <!-- Add reCAPTCHA -->
+                        @if (!showRegister)
+                        {
+                        <!-- CAPTCHA here -->
                         <div id="captcha-container" class="mb-3 text-center">
                             <div class="g-recaptcha" data-sitekey="@SiteKey"></div>
                         </div>
-
+                        
                         <button type="submit" class="btn btn-primary w-100">Login</button>
+                        }
                     </EditForm>
                 </div>
                 <div class="card-footer text-center">
@@ -52,7 +55,7 @@
         </div>
     </div>
 
-    <!-- Register Component, Show/Hide Based on the flag -->
+    <!-- Register Component - Show/Hide -->
     @if (showRegister)
     {
         <div class="row justify-content-center mt-4">
@@ -76,7 +79,6 @@
 
     protected override void OnInitialized()
     {
-        // Load the site key from configuration (environment variable or appsettings.json)
         SiteKey = Configuration["GoogleCaptcha:SiteKey"];
     }
 
@@ -84,7 +86,7 @@
     {
         try
         {
-            // Get the CAPTCHA response token from the client
+            // Getting CAPTCHA token from client like so
 
             var captchaResponse = await JSRuntime.InvokeAsync<string>("grecaptcha.getResponse", null);
 
@@ -95,7 +97,7 @@
                 return;
             }
 
-            // Include the CAPTCHA response in the login request
+            // Include CAPTCHA response in the login request
             loginRequest.CaptchaResponse = captchaResponse;
 
             var client = HttpClientFactory.CreateClient("ApiClient");
@@ -119,16 +121,18 @@
         }
     }
 
-    private void ShowRegister()
+    private async void ShowRegister()
     {
         showRegister = !showRegister;
+
+     
     }
 
     private class LoginRequest
     {
         public string Username { get; set; }
         public string Password { get; set; }
-        public string CaptchaResponse { get; set; } // Add CAPTCHA response field
+        public string CaptchaResponse { get; set; }
     }
 
     private class LoginResponse
