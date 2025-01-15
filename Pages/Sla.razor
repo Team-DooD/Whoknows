@@ -1,6 +1,10 @@
 ﻿@page "/sla"
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Net.Http.Headers
+@using BlazorWhoknowsV2.Provider
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [AllowAnonymous]
 
 <PageTitle>SLA Agreement - Team Dood applications</PageTitle>
 

@@ -43,24 +43,13 @@ builder.Services.AddCors(options =>
 
 //IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
 
-
 // Add services to the container.
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthenticationStateProvider>());
-
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<IAuthorizationMiddlewareResultHandler, BlazorAuthorizationMiddlewareResultHandler>();
 builder.Services.AddScoped<DelegatingHandler, CustomHttpClientHandler>();
-
-
-
-
-//builder.Services.AddScoped(sp =>
-//{
-//    var client = new HttpClient { BaseAddress = new Uri("https://localhost:7100/") };
-//    return client;
-//});
 builder.Services.AddScoped<CustomHttpClientHandler>();
 
 
@@ -68,7 +57,7 @@ builder.Services.AddScoped<CustomHttpClientHandler>();
 
 builder.Services.AddHttpClient("ApiClient", client =>
 {
-    // Set up your base address and other configurations
+    // Set up your base address http client and other configurations
     string baseUrl = builder.Configuration["Linked:Url"];
     client.BaseAddress = new Uri(baseUrl);
     Console.WriteLine("Using this backend:" + client.BaseAddress);
@@ -93,8 +82,8 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAntiforgery();
 
-app.UseAuthentication();  // Ensure authentication is enabled
-app.UseAuthorization();   // Ensure authorization is enabled
+app.UseAuthentication();  
+app.UseAuthorization();   
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
